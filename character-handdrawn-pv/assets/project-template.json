@@ -3,6 +3,10 @@
   "name": "",
   "revision": "draft-1",
   "route": "original",
+  "directories": {
+    "docs": "docs",
+    "generation": "generation"
+  },
   "brief": {
     "characters": [],
     "style": "",

@@ -2,7 +2,9 @@
 
 优先沿用已有有效工程；不为了使用此 skill 搬动大项目。新长项目可选用 `assets/project-template.json`。文件名可换，但指定一个权威入口，其他审核页和程序配置从它派生。
 
-推荐把歌词、脚本、原始参考、候选画面、已选画面、音频、预览代码及导出分开保存。这里不规定目录名；manifest 中素材路径以 manifest 所在目录为基准，支持绝对路径但分享前应改为可移植路径。
+新项目默认把歌词、分镜、方案、检查建议与复盘放入 `docs/`，提示词、生成任务和生成审核 JSON 放入 `generation/`。`project.json`、工程配置、交付索引和 `AGENTS.md` 留在工程根目录。其他素材、音频、源码和成片按项目需要分开保存；已有工程可继续使用现有目录名。
+
+manifest 中的文档与素材路径均以 manifest 所在目录为基准。`brief.lyrics_file` 可填 `docs/lyrics.md`，`brief.storyboard_file` 可填 `docs/storyboard-v1.md`；未完成时保持 `null`。不要因为文件位于 docs 内就再拼接一次 docs。文档文件指针支持绝对路径，但分享前应改为可移植路径。
 
 ## 模板字段
 
@@ -11,6 +13,8 @@
 | `schema_version` | 当前模板为 1 |
 | `revision` | 当前工程版本；改变选图、时间轴、音频或字幕时更新 |
 | `route` | `original` / `adaptation` / `replacement` |
+| `directories` | 可选的目录配置；新模板含 `docs` 与 `generation`。目录值为项目内相对路径，不含 `..`；可使用已有命名，例如 `notes` |
+| `brief.lyrics_file` / `brief.storyboard_file` | 可选文档路径或 null，以 manifest 所在目录为基准；`--files` 检查已填写的文件是否存在 |
 | `output` | `width`、`height`、`fps`、`total_frames`；草案可为 null，fps 可为数值或 `"30000/1001"` |
 | `timeline_policy` | `contiguous`：镜头连续且不重叠；`composited`：明确允许叠镜，工具仍检查覆盖 |
 | `audio` | 每条包含 `id`、`role`、`path`、`offset_frames`，可加来源与时间原点说明 |
@@ -32,7 +36,11 @@ python <skill>/scripts/project.py check <项目目录>/project.json --files
 python <skill>/scripts/project.py check <项目目录>/project.json --for-export --files
 ```
 
-`init` 只创建不存在的 `project.json`，不覆盖项目，不下载依赖。`check` 只读，输出 JSON；错误退出 1，成功退出 0。草案缺少参数、定时或素材时给警告；`--for-export` 将这些必要项提升为错误，并检查导出授权记录。`--files` 检查已引用素材与音频是否存在、可选摘要是否匹配。它不渲染、不联网、不改变审核状态。
+`init` 创建不存在的 `project.json`、`docs/`、`generation/` 和 `docs/README.md` 文档索引。已有 manifest 时拒绝初始化；已有文档索引保留原文，不创建虚构的歌词或分镜，不下载依赖，也不自动移动旧文件。
+
+`check` 只读，输出 JSON；错误退出 1，成功退出 0。草案缺少参数、定时或素材时给警告；`--for-export` 将这些必要项提升为错误，并检查导出授权记录。`--files` 检查已填写的歌词/分镜文档以及已引用素材与音频是否存在、可选摘要是否匹配。未填写的文档指针不会阻止导出。它不渲染、不联网、不改变审核状态。
+
+这些字段是 schema_version 1 的可选扩展，旧 manifest 不必增加 `directories` 或迁移原文档。用户要求整理已有项目时，先核对目标路径和同名冲突，移动后同步活动脚本、配置与 Markdown 链接；提示词 JSON 内的素材路径仍按 manifest 或项目记录约定解析，不能默认改成相对于 generation/。冻结导出包、输入基线和历史备份保持原样。
 
 `--for-export` 不要求“每张图都由用户确认”。用户已经明确允许整片导出时，把该指令记录进授权即可；用户要求先预览时保持 `allowed: false`。限定旧 revision 的授权会被提示不匹配；未限定版本的授权仍需遵守后来收紧的用户指令。
 

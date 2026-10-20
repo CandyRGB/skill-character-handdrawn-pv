@@ -5,7 +5,7 @@ import argparse
 from fractions import Fraction
 import hashlib
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 import re
 import sys
 
@@ -16,6 +16,16 @@ def is_int(value):
 
 def nonempty(value):
     return isinstance(value, str) and bool(value.strip())
+
+
+def project_directory(value):
+    """A scaffold directory must stay inside the requested project."""
+    if not nonempty(value):
+        raise ValueError("Directory must be a nonempty relative path.")
+    normalized = PurePosixPath(value.replace("\\", "/"))
+    if normalized.is_absolute() or PureWindowsPath(value).drive or ".." in normalized.parts:
+        raise ValueError("Directory must be relative and cannot contain '..'.")
+    return Path(*normalized.parts)
 
 
 def validate(data, base, for_export=False, files=False):
@@ -32,6 +42,16 @@ def validate(data, base, for_export=False, files=False):
         issue("revision is required.", True)
     if data.get("route") not in ("original", "adaptation", "replacement"):
         issue("route must be original, adaptation or replacement.")
+    directories = data.get("directories", {})
+    if not isinstance(directories, dict):
+        issue("directories must be an object when provided.")
+    else:
+        for key in ("docs", "generation"):
+            if key in directories:
+                try:
+                    project_directory(directories[key])
+                except ValueError as exc:
+                    issue(f"directories.{key}: {exc}")
     policy = data.get("timeline_policy", "contiguous")
     if policy not in ("contiguous", "composited"):
         issue("timeline_policy must be contiguous or composited.")
@@ -116,6 +136,20 @@ def validate(data, base, for_export=False, files=False):
         except OSError as exc:
             issue(f"{label}: cannot read file: {exc}")
 
+    # Optional document pointers use the manifest's directory, just like media.
+    brief = data.get("brief", {})
+    if not isinstance(brief, dict):
+        issue("brief must be an object when provided.")
+    else:
+        for key in ("lyrics_file", "storyboard_file"):
+            value = brief.get(key)
+            if value is None:
+                continue
+            if not nonempty(value):
+                issue(f"brief.{key} must be a nonempty path or null.")
+            else:
+                check_file({"path": value}, f"brief.{key}")
+
     orders, intervals, used = set(), [], set()
     for index, scene in enumerate(scenes):
         label = f"scene {scene.get('id', index)}"
@@ -193,9 +227,29 @@ def main():
             data["name"] = args.name
             args.directory.mkdir(parents=True, exist_ok=True)
             target = args.directory / "project.json"
+            scaffold = {}
+            for key, value in data.get("directories", {}).items():
+                destination = args.directory / project_directory(value)
+                if not destination.resolve().is_relative_to(args.directory.resolve()):
+                    raise ValueError(f"Scaffold directory escapes the project: {destination}")
+                if destination.exists() and not destination.is_dir():
+                    raise ValueError(f"Scaffold directory is occupied by a file: {destination}")
+                scaffold[key] = destination
             with target.open("x", encoding="utf-8", newline="\n") as stream:
                 json.dump(data, stream, ensure_ascii=False, indent=2)
                 stream.write("\n")
+            for destination in scaffold.values():
+                destination.mkdir(parents=True, exist_ok=True)
+            if "docs" in scaffold:
+                index = scaffold["docs"] / "README.md"
+                body = (template.parent / "docs-index.md").read_text(encoding="utf-8")
+                for key in ("docs", "generation"):
+                    body = body.replace("{{" + key + "_dir}}", data["directories"].get(key, key).replace("\\", "/"))
+                try:
+                    with index.open("x", encoding="utf-8", newline="\n") as stream:
+                        stream.write(body)
+                except FileExistsError:
+                    pass  # Existing project notes belong to the user.
             result = {"ok": True, "created": str(target.resolve())}
         else:
             data = json.loads(args.manifest.read_text(encoding="utf-8-sig"))

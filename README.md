@@ -98,6 +98,18 @@ Remotion 是一种合成实现；用户指定其他剪辑器时可沿用其工�
 
 长项目可选用 [项目模板](character-handdrawn-pv/assets/project-template.json) 记录镜头、素材、时间轴、版本和导出范围。已有工程不必为此重新建目录。
 
+新项目初始化后具有以下结构：
+
+```text
+my-pv/
+├── project.json
+├── docs/
+│   └── README.md       # 文档索引；已有内容不会被覆盖
+└── generation/         # 提示词、生成任务和审核 JSON
+```
+
+歌词、分镜、方案与复盘集中放在 `docs/`；工程配置、交付入口和 `AGENTS.md` 保留根目录。实际文档按需要创建，将 `brief.lyrics_file`、`brief.storyboard_file` 分别填为 `docs/lyrics.md`、`docs/storyboard-v1.md` 等路径；未完成时保留 `null`。这些路径统一相对于 `project.json`，已有项目仍可沿用原路径。
+
 以下命令从仓库根目录执行，将路径换成自己的项目位置：
 
 ```bash
@@ -114,7 +126,7 @@ python character-handdrawn-pv/scripts/project.py check ./my-pv/project.json --fi
 python character-handdrawn-pv/scripts/project.py check ./my-pv/project.json --for-export --files
 ```
 
-脚本检查重复 ID、素材引用、帧区间空缺与重叠、文件和摘要，以及限定版本的导出授权。草案可保留未定时间和参数；检查不会渲染、联网或改写审核状态。
+脚本检查重复 ID、文档与素材引用、帧区间空缺与重叠、文件和摘要，以及限定版本的导出授权。草案可保留未定时间和参数；检查不会渲染、联网或改写审核状态。旧 manifest 无需补目录字段，不会被自动迁移。
 
 > [!NOTE]
 > 检查通过只表示数据结构符合约定，不代表插画、听感或音画同步已经合格。授权字段是对真实用户指令的记录，不能自行填写来代替授权。
@@ -129,7 +141,9 @@ python character-handdrawn-pv/scripts/project.py check ./my-pv/project.json --fo
 └── character-handdrawn-pv/
     ├── SKILL.md                         # 主入口与阶段路由
     ├── agents/openai.yaml               # Codex 显示信息
-    ├── assets/project-template.json     # 可选项目模板
+    ├── assets/
+    │   ├── project-template.json        # 可选项目模板
+    │   └── docs-index.md                # 新建工程使用的文档索引
     ├── scripts/project.py               # 初始化与只读检查
     └── references/
         ├── storyboard-and-style.md      # 分镜、剧情与视觉设计
@@ -140,3 +154,11 @@ python character-handdrawn-pv/scripts/project.py check ./my-pv/project.json --fo
 ```
 
 完整制作指令见 [SKILL.md](character-handdrawn-pv/SKILL.md)。
+
+## 检查工具的回归验证
+
+在仓库根目录运行，使用 Python 标准库即可：
+
+```bash
+python -m unittest discover -s tests -v
+```
