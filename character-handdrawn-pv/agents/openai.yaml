@@ -1,0 +1,4 @@
+interface:
+  display_name: "角色手书制作"
+  short_description: "从歌词与角色设定制作分镜、整图、演唱和动效，预览审核后按授权导出"
+  default_prompt: "使用 $character-handdrawn-pv，按我的角色、音乐和风格参考制作手书，沿用已有项目并完成本次指定阶段。"

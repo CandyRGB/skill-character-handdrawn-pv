@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "name": "",
+  "revision": "draft-1",
+  "route": "original",
+  "brief": {
+    "characters": [],
+    "style": "",
+    "references": [],
+    "lyrics_file": null,
+    "storyboard_file": null,
+    "pending": []
+  },
+  "output": {
+    "width": null,
+    "height": null,
+    "fps": null,
+    "total_frames": null
+  },
+  "timeline_policy": "contiguous",
+  "audio": [],
+  "assets": [],
+  "scenes": [],
+  "review": [],
+  "export_authorization": {
+    "allowed": false,
+    "evidence": null,
+    "revision": null
+  }
+}
